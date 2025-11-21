@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SteamAI - Recommendations</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>Game Recommendations</h1>
+    <a href="{{ url_for('index') }}" class="link-back">← Back to Home</a>
+
+    <div class="search-box">
+      <label for="game-input">Game name:</label>
+      <input id="game-input" type="text" placeholder="e.g. Dota 2">
+      <button id="search-btn">Recommend</button>
+    </div>
+
+    <div id="status"></div>
+
+    <table id="result-table" class="hidden">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>AppID</th>
+          <th>Name</th>
+          <th>Similarity</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script src="{{ url_for('static', filename='recommend.js') }}"></script>
+</body>
+</html>

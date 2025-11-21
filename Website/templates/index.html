@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SteamAI - Home</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>SteamAI Recommendation Demo</h1>
+    <p>Choose a mode:</p>
+    <div class="nav-buttons">
+      <a class="btn" href="{{ url_for('recommend_page') }}">Game Recommendations (Table)</a>
+      <a class="btn" href="{{ url_for('graph_page') }}">Force-Directed Graph</a>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SteamAI - Force Graph</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>Force-Directed Graph</h1>
+    <a href="{{ url_for('index') }}" class="link-back">← Back to Home</a>
+
+    <div class="search-box">
+      <label for="game-input">Game name:</label>
+      <input id="game-input" type="text" placeholder="e.g. Dota 2">
+      <button id="draw-btn">Draw Graph</button>
+    </div>
+
+    <div id="status"></div>
+    <div id="graph"></div>
+  </div>
+
+  <!-- 引入 D3 -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="{{ url_for('static', filename='graph.js') }}"></script>
+</body>
+</html>

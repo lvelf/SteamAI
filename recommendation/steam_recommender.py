@@ -74,3 +74,17 @@ class SteamRecommender:
             return []
 
         return results.head(top_k).to_dict(orient="records")
+    
+    def search_by_vector(self, vec, top_k: int = 10):
+
+        if vec.ndim == 1:
+            v = vec.reshape(1, -1)
+        else:
+            v = vec
+
+        sims = cosine_similarity(v, self.emb_norm)[0]
+        top_idx = sims.argsort()[::-1][:top_k]
+
+        results = self.apps.iloc[top_idx].copy()
+        results["similarity"] = sims[top_idx]
+        return results[["appid", "name", "short_description", "similarity"]]

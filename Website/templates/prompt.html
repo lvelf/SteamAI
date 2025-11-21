@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SteamAI - Prompt Search</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>Prompt-based Game Search</h1>
+    <a href="{{ url_for('index') }}" class="link-back">← Back to Home</a>
+
+    <p style="color:#9ca3af; margin-bottom:8px;">
+      Describe the kind of game you want (or type an AppID / exact game name).
+    </p>
+
+    <div class="search-box" style="align-items:flex-start; flex-direction:column;">
+      <label for="prompt-input">Prompt:</label>
+      <textarea id="prompt-input" rows="3" style="width:100%; resize:vertical;"
+                placeholder="e.g., A free-to-play MOBA game where I can play with friends, similar to Dota 2."></textarea>
+      <button id="prompt-btn" style="margin-top:8px;">Search</button>
+    </div>
+
+    <div id="prompt-status"></div>
+
+    <table id="prompt-table" class="hidden">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>AppID</th>
+          <th>Name</th>
+          <th>Similarity</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script src="{{ url_for('static', filename='prompt.js') }}"></script>
+</body>
+</html>

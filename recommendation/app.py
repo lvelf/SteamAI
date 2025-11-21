@@ -1,8 +1,9 @@
-# Website/app.py
 import os
 import sys
 from flask import Flask, render_template, request, jsonify
 from sklearn.metrics.pairwise import cosine_similarity
+from sentence_transformers import SentenceTransformer
+from utils import encode_text, df_to_json_records
 
 THIS_DIR = os.path.dirname(__file__)                 # .../Final/SteamAI/Website
 PROJECT_ROOT = os.path.dirname(THIS_DIR)             # .../Final/SteamAI
@@ -45,6 +46,10 @@ rec = SteamRecommender(
     ),
 )
 
+print("Loading text encoder (BAAI/bge-m3)...")
+text_encoder = SentenceTransformer("BAAI/bge-m3")
+print("Text encoder loaded.")
+
 # ---------- Web Route ----------
 @app.route("/")
 def index():
@@ -57,6 +62,10 @@ def recommend_page():
 @app.route("/graph")
 def graph_page():
     return render_template("graph.html")
+
+@app.route("/prompt")
+def prompt_page():
+    return render_template("prompt.html")
 
 
 # ---------- API ----------
@@ -166,6 +175,60 @@ def api_graph():
                     })
 
     return jsonify({"nodes": nodes, "links": links, "center": {"appid": appid, "name": center_name}})
+
+@app.route("/api/prompt_recommend", methods=["POST"])
+def api_prompt_recommend():
+    data = request.get_json(force=True) or {}
+    text = (data.get("text") or "").strip()
+
+    if not text:
+        return jsonify({"error": "text is required"}), 400
+
+    mode = "semantic"
+    center = None
+    df = None
+
+    if text.isdigit():
+        appid = int(text)
+        row = rec.apps[rec.apps["appid"] == appid]
+        if not row.empty:
+            mode = "appid"
+            center = {
+                "appid": appid,
+                "name": row["name"].iloc[0],
+            }
+            df = rec.recommend_similar(appid, top_k=10)
+
+   
+    if df is None:
+        exact = rec.apps[rec.apps["name"].str.casefold() == text.casefold()]
+        if not exact.empty:
+            mode = "name"
+            appid = int(exact["appid"].iloc[0])
+            center = {
+                "appid": appid,
+                "name": exact["name"].iloc[0],
+            }
+            df = rec.recommend_similar(appid, top_k=10)
+
+    
+    if df is None:
+        mode = "semantic"
+        vec = encode_text(text_encoder, text)         # (1, 1024)
+        df = rec.search_by_vector(vec, top_k=10)
+    
+    records = df_to_json_records(df)
+    
+    return_json = jsonify({
+        "mode": mode,
+        "center": center,
+        "recommendations": records,
+    })
+    
+    print(records)
+    return return_json
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)

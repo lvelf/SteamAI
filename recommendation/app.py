@@ -3,7 +3,7 @@ import sys
 from flask import Flask, render_template, request, jsonify
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
-from utils import encode_text, df_to_json_records
+from utils import encode_text, df_to_json_records, parse_filters_from_request
 import pandas as pd
 import numpy as np
 
@@ -100,10 +100,13 @@ def api_recommend():
 
     seed = candidates[0]
     print("seed game:", seed)
-
+    # filter
+    #filter_kwargs = parse_filters_from_request(request)
+    
     df = rec.recommend_similar(
         seed["appid"],
         top_k=10,
+        # **filter_kwargs,
     )
     df_clean = df.where(pd.notnull(df), None)
     df_clean = df.replace({np.nan: None})

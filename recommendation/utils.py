@@ -33,3 +33,51 @@ def df_to_json_records(df):
             r["short_description"] = ""
             
     return records
+
+def parse_filters_from_request(req):
+    """Parse filter parameters from request.args"""
+    def _get_int(name):
+        v = req.args.get(name)
+        if v is None or v == "" or v.lower() == "null":
+            return None
+        try:
+            return int(v)
+        except ValueError:
+            return None
+
+    def _get_float(name):
+        v = req.args.get(name)
+        if v is None or v == "" or v.lower() == "null":
+            return None
+        try:
+            return float(v)
+        except ValueError:
+            return None
+
+    def _get_bool(name):
+        v = req.args.get(name)
+        if v is None or v == "":
+            return None
+        s = v.strip().lower()
+        if s in ("1", "true", "t", "yes", "y"):
+            return True
+        if s in ("0", "false", "f", "no", "n"):
+            return False
+        return None
+
+    # genres : "Action,Adventure,RPG"
+    genres_raw = req.args.get("genres")
+    if genres_raw:
+        genres = [g.strip() for g in genres_raw.split(",") if g.strip()]
+    else:
+        genres = None
+
+    return dict(
+        min_year=_get_int("min_year"),
+        max_year=_get_int("max_year"),
+        genres=genres,
+        is_free=_get_bool("is_free"),
+        min_positive_ratio=_get_float("min_positive_ratio"),
+        min_review_count=_get_int("min_review_count"),
+        max_price=_get_float("max_price"),
+    )

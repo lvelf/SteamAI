@@ -15,7 +15,7 @@ class SteamRecommender:
          - short_description
          - type
          - genres (array<string>)
-         - release_year (int)
+         - release_date (int)
          - is_free
          - mat_final_price
          - positive_ratio (0~1)
@@ -113,11 +113,11 @@ class SteamRecommender:
 
         out = df
 
-        if min_year is not None and "release_year" in out.columns:
-            out = out[out["release_year"].fillna(0) >= min_year]
+        if min_year is not None and "release_date" in out.columns:
+            out = out[out["release_date"].fillna(0) >= min_year]
 
-        if max_year is not None and "release_year" in out.columns:
-            out = out[out["release_year"].fillna(9999) <= max_year]
+        if max_year is not None and "release_date" in out.columns:
+            out = out[out["release_date"].fillna(9999) <= max_year]
 
         if genres:
             gset = {g.lower() for g in genres}
@@ -262,7 +262,7 @@ class SteamRecommender:
                 "similarity",
                 "positive_ratio",
                 "review_count",
-                "release_year",
+                "release_date",
                 "genres",
                 "score",
             ]
@@ -286,7 +286,7 @@ class SteamRecommender:
             "short_description",
             "similarity",
         ]
-        for c in ["positive_ratio", "review_count", "release_year", "genres", "score"]:
+        for c in ["positive_ratio", "review_count", "release_date", "genres", "score"]:
             if c in df.columns:
                 cols.append(c)
 
@@ -355,7 +355,7 @@ class SteamRecommender:
             "similarity",
             "score",
         ]
-        for c in ["positive_ratio", "review_count", "release_year", "genres"]:
+        for c in ["positive_ratio", "review_count", "release_date", "genres"]:
             if c in df.columns:
                 cols.append(c)
 

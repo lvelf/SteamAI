@@ -23,7 +23,7 @@ REVIEWS_PATH = os.path.join(PROCESSED_DIR, "reviews.parquet")
 SUMMARIES_PATH = os.path.join(PROCESSED_DIR, "review_summaries.parquet")
 SUMMARIES_PATH2 = os.path.join(THIS_DIR_DATA, "review_summaries.parquet")
 
-model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+model_name = "mistralai/Mistral-7B-Instruct-v0.2"
 
 
 def pick_reviews_for_app(df_app: pd.DataFrame, max_reviews: int = 80) -> List[str]:
@@ -96,12 +96,17 @@ def build_review_summaries(
     summaries_rows = []
     done_appids = set()
     
+    
     if os.path.exists(SUMMARIES_PATH):
         print("Found existing summary file, resuming:", SUMMARIES_PATH)
         existing = pd.read_parquet(SUMMARIES_PATH)
-        summaries_rows.extend(existing.to_dict("records"))
-        done_appids = set(existing["appid"].tolist())
-        print("Already summarized apps:", len(done_appids))
+
+        if "appid" in existing.columns:
+            summaries_rows.extend(existing.to_dict("records"))
+            done_appids = set(existing["appid"].tolist())
+            print("Already summarized apps:", len(done_appids))
+        else:
+            print("Existing summary file has no 'appid' column, ignoring old summaries.")
     
     appid_to_name = dict(zip(apps["appid"], apps["name"]))
     appid_to_total_reviews = dict(zip(apps["appid"], apps["review_count"]))

@@ -20,12 +20,14 @@
   <main class="container">
     <section class="card">
       <h2>Search Review Summary</h2>
-      <p>Enter a game name or appid to view its LLM-generated review summary.</p>
-      <div class="form-row">
-        <input id="summary-input" type="text" placeholder="e.g. Portal or 400" />
-        <button id="summary-search-btn">Search</button>
-      </div>
-      <p id="summary-status" class="status-text"></p>
+        <p>Enter a game name or appid to view its LLM-generated review summary.</p>
+
+        <div class="search-box">
+          <input id="summary-input" placeholder="e.g. Portal or 400">
+          <button id="summary-search-btn">Search</button>
+        </div>
+
+    <p id="summary-status"></p>
     </section>
 
     <section id="summary-result" class="card hidden">

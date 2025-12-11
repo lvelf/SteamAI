@@ -18,4 +18,9 @@ apps_stats = spark.read.parquet(app_with_stats_path)
 apps_stats.printSchema()
 apps_stats.show(5, truncate=False)
 
+emb_path = os.path.join(PROCESSED_PATh, "apps_embeddings.parquet")
+emb = spark.read.parquet(emb_path)
+emb.printSchema()
+emb.show(3, truncate=False)
+
 spark.stop()

@@ -16,17 +16,9 @@ rec = SteamRecommender(apps_parquet, emb_parquet)
 print(rec.find_appid_by_name("crown tric", top_k=5))
 
 # filter
-df = rec.recommend_by_name(
-    "Portal 2",
-    top_k_candidates=3,
-    top_k=10,
-    min_year=2015,
-    min_review_count=100,
-    min_positive_ratio=0.8,
-)
-print(df.head(10))
 
 
+"""
 df = rec.recommend_by_name(
     "Portal 2",
     top_k_candidates=3,
@@ -36,8 +28,15 @@ df = rec.recommend_by_name(
     min_positive_ratio=0.6,
 )
 print(df.head(10))
+"""
 
 df = rec.recommend_by_name(
     "Portal 2",
 )
 print(df.head(10))
+
+print("================= Fuzz Rec ======================")
+print(rec.find_appid_by_name("CS", top_k=5))
+
+print("================= Rec ======================")
+print(rec.find_appid_by_name("Dota", top_k=5))

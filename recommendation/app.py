@@ -4,6 +4,8 @@ from flask import Flask, render_template, request, jsonify
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
 from utils import encode_text, df_to_json_records
+import pandas as pd
+import numpy as np
 
 THIS_DIR = os.path.dirname(__file__)                 # .../Final/SteamAI/Website
 PROJECT_ROOT = os.path.dirname(THIS_DIR)             # .../Final/SteamAI
@@ -19,6 +21,7 @@ from steam_recommender import SteamRecommender
 
 TEMPLATE_DIR = os.path.join(PROJECT_ROOT, "Website", "templates")
 STATIC_DIR   = os.path.join(PROJECT_ROOT, "Website", "static")
+PROCESSED = os.path.join(DATA_BASE, "processed")
 print("TEMPLATE_DIR =", TEMPLATE_DIR)
 print("STATIC_DIR   =", STATIC_DIR)
 
@@ -31,6 +34,10 @@ app = Flask(
     static_folder=STATIC_DIR,
 )
 
+apps_parquet = os.path.join(PROCESSED, "apps_with_stats.parquet")
+emb_parquet = os.path.join(PROCESSED, "apps_embeddings.parquet")
+
+"""
 rec = SteamRecommender(
     apps_csv_path=os.path.join(
         DATA_BASE,
@@ -45,6 +52,8 @@ rec = SteamRecommender(
         "archive/steam_dataset_2025_embeddings_package_v1/steam_dataset_2025_embeddings/applications_embedding_map.csv",
     ),
 )
+"""
+rec = SteamRecommender(apps_parquet, emb_parquet)
 
 print("Loading text encoder (BAAI/bge-m3)...")
 text_encoder = SentenceTransformer("BAAI/bge-m3")
@@ -78,31 +87,37 @@ def api_search_game():
 
 @app.route("/api/recommend")
 def api_recommend():
-    appid = request.args.get("appid")
-    name = request.args.get("name")
+    name = request.args.get("name", "").strip()
+    if not name:
+        return jsonify({"error": "Missing game name"}), 400
 
-    if appid is None:
-        if not name:
-            return jsonify({"error": "appid or name is required"}), 400
+    print("recommending for:", name)
 
-        matches = rec.find_appid_by_name(name, top_k=1)
-        if not matches:
-            return jsonify({"error": f"No game found for name '{name}'"}), 404
+    # fuzz find app_id 
+    candidates = rec.find_appid_by_name(name, top_k=3)
+    if not candidates:
+        return jsonify({"error": f"No game found for '{name}'"}), 404
 
-        appid = matches[0]["appid"]
-        center_name = matches[0]["name"]
-    else:
-        appid = int(appid)
-        row = rec.apps[rec.apps["appid"] == appid]
-        center_name = row["name"].iloc[0] if not row.empty else str(appid)
+    seed = candidates[0]
+    print("seed game:", seed)
 
-    df = rec.recommend_similar(appid, top_k=10)
-    data = df.to_dict(orient="records")
-
-    return jsonify({
-        "center": {"appid": appid, "name": center_name},
-        "recommendations": data,
+    df = rec.recommend_similar(
+        seed["appid"],
+        top_k=10,
+        min_review_count=10,
+        min_positive_ratio=0.6,
+    )
+    df_clean = df.where(pd.notnull(df), None)
+    df_clean = df.replace({np.nan: None})
+    recs = df_clean.to_dict(orient="records")
+    
+    print(df.head(10))
+    js_ = jsonify({
+        "center": seed,
+        "recommendations": recs,
     })
+    print(js_.get_json())
+    return js_
 
 @app.route("/api/graph")
 def api_graph():

@@ -6,6 +6,16 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+  <header class="site-header">
+    <h1>SteamAI - Review Summaries</h1>
+    <div class="nav-buttons">
+      <a href="/">Home</a>
+      <a href="/recommend">Recommend</a>
+      <a href="/graph">Graph</a>
+      <a href="/prompt">Prompt</a>
+      <a href="/summary">Summary</a>
+  </div>
+  </header>
   <div class="container">
     <h1>Force-Directed Graph</h1>
     <a href="{{ url_for('index') }}" class="link-back">← Back to Home</a>

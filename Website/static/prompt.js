@@ -64,3 +64,4 @@ promptBtn.addEventListener("click", async () => {
     statusEl.textContent = "Network or server error.";
   }
 });
+

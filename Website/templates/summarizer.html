@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SteamAI - Review Summary</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="site-header">
+    <h1>SteamAI - Review Summaries</h1>
+    <div class="nav-buttons">
+      <a href="/">Home</a>
+      <a href="/recommend">Recommend</a>
+      <a href="/graph">Graph</a>
+      <a href="/prompt">Prompt</a>
+      <a href="/summary">Summary</a>
+  </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Search Review Summary</h2>
+      <p>Enter a game name or appid to view its LLM-generated review summary.</p>
+      <div class="form-row">
+        <input id="summary-input" type="text" placeholder="e.g. Portal or 400" />
+        <button id="summary-search-btn">Search</button>
+      </div>
+      <p id="summary-status" class="status-text"></p>
+    </section>
+
+    <section id="summary-result" class="card hidden">
+      <h2 id="summary-title"></h2>
+      <p id="summary-meta" class="meta-text"></p>
+      <pre id="summary-content" class="summary-content"></pre>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='summarizer.js') }}"></script>
+</body>
+</html>

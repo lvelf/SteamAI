@@ -22,6 +22,7 @@ from steam_recommender import SteamRecommender
 TEMPLATE_DIR = os.path.join(PROJECT_ROOT, "Website", "templates")
 STATIC_DIR   = os.path.join(PROJECT_ROOT, "Website", "static")
 PROCESSED = os.path.join(DATA_BASE, "processed")
+SUMMARIES_PATH = os.path.join(PROCESSED, "review_summaries.parquet")
 print("TEMPLATE_DIR =", TEMPLATE_DIR)
 print("STATIC_DIR   =", STATIC_DIR)
 
@@ -55,6 +56,18 @@ rec = SteamRecommender(
 """
 rec = SteamRecommender(apps_parquet, emb_parquet)
 
+print("Loading review summaries ...")
+try:
+    summaries_df = pd.read_parquet(SUMMARIES_PATH)
+    summaries_df["appid"] = summaries_df["appid"].astype(str)
+    print("Summaries loaded:", len(summaries_df))
+except FileNotFoundError:
+    print("No review_summaries.parquet found, summaries_df is empty.")
+    summaries_df = pd.DataFrame(columns=[
+        "appid", "name", "summary", 
+        "n_reviews_used", "n_reviews_total", "last_updated"
+    ])
+
 print("Loading text encoder (BAAI/bge-m3)...")
 text_encoder = SentenceTransformer("BAAI/bge-m3")
 print("Text encoder loaded.")
@@ -75,6 +88,10 @@ def graph_page():
 @app.route("/prompt")
 def prompt_page():
     return render_template("prompt.html")
+
+@app.route("/summary")
+def summary_page():
+    return render_template("summarizer.html")
 
 
 # ---------- API ----------
@@ -243,6 +260,42 @@ def api_prompt_recommend():
     print(records)
     return return_json
 
+@app.route("/api/review_summary")
+def api_review_summary():
+    """
+    return JSON: { appid, name, summary, n_reviews_used, n_reviews_total, last_updated }
+    """
+    appid = (request.args.get("appid") or "").strip()
+    name = (request.args.get("name") or "").strip()
+
+    if not appid and not name:
+        return jsonify({"error": "Missing 'appid' or 'name' parameter"}), 400
+
+    df = summaries_df
+    if df.empty:
+        return jsonify({"error": "No summaries available"}), 404
+
+    row = None
+    if appid:
+        row = df[df["appid"] == str(appid)]
+
+    if (row is None or row.empty) and name:
+        mask = df["name"].fillna("").str.contains(name, case=False, na=False)
+        row = df[mask].sort_values("n_reviews_used", ascending=False)
+
+    if row is None or row.empty:
+        return jsonify({"error": "No summary found for given appid/name"}), 404
+
+    r = row.iloc[0]
+    payload = {
+        "appid": r["appid"],
+        "name": r["name"],
+        "summary": r["summary"],
+        "n_reviews_used": int(r.get("n_reviews_used", 0) or 0),
+        "n_reviews_total": int(r.get("n_reviews_total", 0) or 0),
+        "last_updated": str(r.get("last_updated", "")),
+    }
+    return jsonify(payload)
 
 
 if __name__ == "__main__":

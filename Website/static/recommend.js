@@ -43,3 +43,9 @@ btn.addEventListener("click", async () => {
     statusEl.textContent = "Network or server error.";
   }
 });
+
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    btn.click();
+  }
+});

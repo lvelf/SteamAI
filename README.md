@@ -18,6 +18,9 @@ pip install pyspark
 python -m pip install pyarrow
 
 pip install "accelerate>=0.31.0"
+
+pip install flask
+
 ```
 
 Run code

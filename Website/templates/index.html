@@ -6,14 +6,28 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <div class="container">
+  <div class="home-header">
     <h1>SteamAI Recommendation Demo</h1>
     <p>Choose a mode:</p>
-    <div class="nav-buttons">
-      <a class="btn" href="{{ url_for('recommend_page') }}">Game Recommendations (Table)</a>
-      <a class="btn" href="{{ url_for('graph_page') }}">Force-Directed Graph</a>
-      <a class="btn" href="{{ url_for('prompt_page') }}">Prompt-based Search</a>
-    </div>
   </div>
+
+  <div class="mode-nav">
+    <a class="mode-card" href="/recommend">
+      Game Recommendations (Table)
+      <span>Top-k similar games with filters</span>
+    </a>
+    <a class="mode-card" href="/graph">
+      Force-Directed Graph
+      <span>Visualize multi-hop similarity graph</span>
+    </a>
+    <a class="mode-card" href="/prompt">
+      Prompt-based Search
+      <span>Natural language → semantic recommendations</span>
+    </a>
+    <a class="mode-card" href="/summary">
+      Review Summaries
+      <span>LLM-generated pros / cons summaries</span>
+    </a>
+</div>
 </body>
 </html>

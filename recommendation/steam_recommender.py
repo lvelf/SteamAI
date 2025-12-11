@@ -52,8 +52,8 @@ class SteamRecommender:
         print("apps with embeddings:", merged.shape)
         
         # delete DLC / demo
-        # if "type" in merged.columns:
-        #    merged = merged[merged["type"] == "game"].copy()
+        if "type" in merged.columns:
+            merged = merged[merged["type"] == "game"].copy()
         
         # genres -> List[str]
         if "genres" in merged.columns:
@@ -221,7 +221,7 @@ class SteamRecommender:
         min_positive_ratio: Optional[float] = None,
         min_review_count: Optional[int] = None,
         max_price: Optional[float] = None,
-        use_multi_modal_score: bool = True,
+        use_multi_modal_score: bool = False,
     ) -> pd.DataFrame:
         """
         use appid to recommend:
@@ -374,6 +374,8 @@ class SteamRecommender:
         candidates = self.find_appid_by_name(name, top_k=top_k_candidates)
         if not candidates:
             raise ValueError(f"No game found for name '{name}'")
+        
+        print(f"candidates are: {candidates}")
 
         seed = candidates[0]
         print(f"Using seed game: {seed['name']} (appid={seed['appid']})")

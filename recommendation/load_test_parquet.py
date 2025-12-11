@@ -35,8 +35,8 @@ df = rec.recommend_by_name(
 )
 print(df.head(10))
 
-print("================= Fuzz Rec ======================")
-print(rec.find_appid_by_name("CS", top_k=5))
-
 print("================= Rec ======================")
-print(rec.find_appid_by_name("Dota", top_k=5))
+# print(rec.find_appid_by_name("Dota", top_k=5))
+print(rec.recommend_by_name(
+    "Dota 2",
+))

@@ -104,8 +104,6 @@ def api_recommend():
     df = rec.recommend_similar(
         seed["appid"],
         top_k=10,
-        min_review_count=10,
-        min_positive_ratio=0.6,
     )
     df_clean = df.where(pd.notnull(df), None)
     df_clean = df.replace({np.nan: None})
@@ -116,33 +114,32 @@ def api_recommend():
         "center": seed,
         "recommendations": recs,
     })
-    print(js_.get_json())
     return js_
 
 @app.route("/api/graph")
 def api_graph():
     appid = request.args.get("appid")
     name = request.args.get("name")
-
+    if not name:
+        return jsonify({"error": "Missing game name"}), 400
     
-    if appid is None:
-        if not name:
-            return jsonify({"error": "appid or name is required"}), 400
+    candidates = rec.find_appid_by_name(name, top_k=3)
+    if not candidates:
+        return jsonify({"error": f"No game found for '{name}'"}), 404
 
-        matches = rec.find_appid_by_name(name, top_k=1)
-        if not matches:
-            return jsonify({"error": f"No game found for name '{name}'"}), 404
 
-        appid = matches[0]["appid"]
-        center_name = matches[0]["name"]
-    else:
-        appid = int(appid)
-        row = rec.apps[rec.apps["appid"] == appid]
-        center_name = row["name"].iloc[0] if not row.empty else str(appid)
-
+    seed = candidates[0]
+    center_name = seed
+    appid = seed["appid"]
     
-    df = rec.recommend_similar(appid, top_k=10)
-    recs = df.to_dict(orient="records")
+    print("seed game:", seed)
+    df = rec.recommend_similar(
+        seed["appid"],
+        top_k=10,
+    )
+    df_clean = df.where(pd.notnull(df), None)
+    df_clean = df.replace({np.nan: None})
+    recs = df_clean.to_dict(orient="records")
 
     
     nodes = [{
@@ -172,7 +169,7 @@ def api_graph():
 
    
     if rec_appids:
-        rec_indices = [rec.app2idx[a] for a in rec_appids]
+        rec_indices = [rec.appid2idx[a] for a in rec_appids]
         sub_emb = rec.emb_norm[rec_indices]
         sim_mat = cosine_similarity(sub_emb, sub_emb)
 

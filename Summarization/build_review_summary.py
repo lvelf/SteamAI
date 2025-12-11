@@ -16,10 +16,14 @@ PROJECT_ROOT = os.path.dirname(THIS_DIR)             # .../Final/SteamAI
 FINAL_ROOT = os.path.dirname(PROJECT_ROOT)           # .../Final
 DATA_BASE = os.path.join(FINAL_ROOT, "data")         # .../Final/data
 PROCESSED_DIR = os.path.join(DATA_BASE, "processed/")
+THIS_DIR_DATA = os.path.join(THIS_DIR, "data")
 
-APPS_PATH = os.path.join(PROCESSED_DIR, "apps_clean.parquet")
+APPS_PATH = os.path.join(PROCESSED_DIR, "apps_with_stats.parquet")
 REVIEWS_PATH = os.path.join(PROCESSED_DIR, "reviews.parquet")
 SUMMARIES_PATH = os.path.join(PROCESSED_DIR, "review_summaries.parquet")
+SUMMARIES_PATH2 = os.path.join(THIS_DIR_DATA, "review_summaries.parquet")
+
+model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 
 
 def pick_reviews_for_app(df_app: pd.DataFrame, max_reviews: int = 80) -> List[str]:
@@ -51,7 +55,7 @@ def build_review_summaries(
     top_n_apps: int = 100,
     min_review_count: int = 50,
     sleep_sec: float = 0.2,
-    model_name: str = "meta-llama/Meta-Llama-3-8B-Instruct",
+    model_name: str = model_name,
     use_4bit: bool = False,
 ) -> pd.DataFrame:
     
@@ -69,6 +73,11 @@ def build_review_summaries(
     reviews = pd.read_parquet(REVIEWS_PATH)
     assert "appid" in reviews.columns
     assert "review_text" in reviews.columns
+
+    
+    # cast to int
+    apps["appid"] = pd.to_numeric(apps["appid"], errors="coerce")
+    reviews["appid"] = pd.to_numeric(reviews["appid"], errors="coerce")
 
     # only save English
     if "language" in reviews.columns:
@@ -154,6 +163,8 @@ def build_review_summaries(
             tmp_df = pd.DataFrame(summaries_rows)
             tmp_df.to_parquet(SUMMARIES_PATH, index=False)
             print("  [autosave] wrote", len(tmp_df), "rows to", SUMMARIES_PATH)
+            tmp_df.to_parquet(SUMMARIES_PATH2, index=False)
+            print("  [autosave] wrote", len(tmp_df), "rows to", SUMMARIES_PATH2)
 
         time.sleep(sleep_sec)
 
@@ -168,9 +179,9 @@ def build_review_summaries(
 if __name__ == "__main__":
     
     df = build_review_summaries(
-        top_n_apps=50,
-        min_review_count=50,
-        model_name="meta-llama/Meta-Llama-3-8B-Instruct",
+        top_n_apps=10,
+        min_review_count=10,
+        model_name= model_name,
         use_4bit=False,
     )
     print(df.head())

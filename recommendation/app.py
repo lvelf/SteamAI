@@ -3,7 +3,7 @@ import sys
 from flask import Flask, render_template, request, jsonify
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
-from utils import encode_text, df_to_json_records, parse_filters_from_request
+from utils import encode_text, df_to_json_records, parse_filters_from_request, to_float, to_int
 import pandas as pd
 import numpy as np
 
@@ -110,21 +110,81 @@ def api_recommend():
 
     print("recommending for:", name)
 
+    # construct params
+    min_year = to_int(request.args.get("min_year"))
+    max_year = to_int(request.args.get("max_year"))
+
+
+    genres_raw = request.args.get("genres", "").strip()
+    genres = (
+        [g.strip() for g in genres_raw.split(",") if g.strip()]
+        if genres_raw
+        else None
+    )
+
+    print(f"genres: {genres} min_year: {min_year} max_year: {max_year}")
+
+    is_free_str = request.args.get("is_free")
+    is_multi_str = request.args.get("is_multi")
+    print(f"is_free_str: {is_free_str}")
+    print(f"is_multi_str: {is_multi_str}")
+    
+    is_free = True if is_free_str == "true" else False
+    is_multi = True if is_multi_str == "true" else False
+
+    min_positive_ratio = to_float(request.args.get("min_positive_ratio"))
+    min_review_count = to_int(request.args.get("min_review_count"))
+    max_price = to_float(request.args.get("max_price"))
+    print(f"min_positive_ratio: {min_positive_ratio} min_review_count: {min_review_count} max_price: {max_price}")
+    print(f"is_multi: {is_multi} and is_free:{is_free}")
     # fuzz find app_id 
     candidates = rec.find_appid_by_name(name, top_k=3)
     if not candidates:
         return jsonify({"error": f"No game found for '{name}'"}), 404
-
+    
     seed = candidates[0]
     print("seed game:", seed)
+    
+    if genres == None and min_year == None and max_year == None and  min_positive_ratio == None and min_review_count == None and max_price == None and is_free == False and is_multi == False:
+        print("not using params to rec 1")
+        df = rec.recommend_similar(
+            seed["appid"],
+            top_k=10,
+            # **filter_kwargs,
+        )
+    else:
+        try:
+            print("using params to rec")
+            df = rec.recommend_similar(
+                seed["appid"],
+                top_k=10,
+                min_year=min_year,
+                max_year=max_year,
+                genres=genres,
+                is_free=is_free,
+                min_positive_ratio=min_positive_ratio,
+                min_review_count=min_review_count,
+                max_price=max_price,
+                use_multi_modal_score=is_multi,
+            )
+            center = {
+                "appid": df.iloc[0]["appid"],
+                "name": df.iloc[0]["name"],
+            } if not df.empty else None
+        except AttributeError:
+            print("not using params to rec")
+            df = rec.recommend_similar(
+                seed["appid"],
+                top_k=10,
+                # **filter_kwargs,
+            )
+
+    
+    
     # filter
     #filter_kwargs = parse_filters_from_request(request)
     
-    df = rec.recommend_similar(
-        seed["appid"],
-        top_k=10,
-        # **filter_kwargs,
-    )
+    
     df_clean = df.where(pd.notnull(df), None)
     df_clean = df.replace({np.nan: None})
     recs = df_clean.to_dict(orient="records")
@@ -143,20 +203,86 @@ def api_graph():
     if not name:
         return jsonify({"error": "Missing game name"}), 400
     
+    #candidates = rec.find_appid_by_name(name, top_k=3)
+    #if not candidates:
+    #    return jsonify({"error": f"No game found for '{name}'"}), 404
+
+    # construct params
+    min_year = to_int(request.args.get("min_year"))
+    max_year = to_int(request.args.get("max_year"))
+
+
+    genres_raw = request.args.get("genres", "").strip()
+    genres = (
+        [g.strip() for g in genres_raw.split(",") if g.strip()]
+        if genres_raw
+        else None
+    )
+
+    print(f"genres: {genres} min_year: {min_year} max_year: {max_year}")
+
+    is_free_str = request.args.get("is_free")
+    is_multi_str = request.args.get("is_multi")
+    print(f"is_free_str: {is_free_str}")
+    print(f"is_multi_str: {is_multi_str}")
+    
+    is_free = True if is_free_str == "true" else False
+    is_multi = True if is_multi_str == "true" else False
+
+    min_positive_ratio = to_float(request.args.get("min_positive_ratio"))
+    min_review_count = to_int(request.args.get("min_review_count"))
+    max_price = to_float(request.args.get("max_price"))
+    print(f"min_positive_ratio: {min_positive_ratio} min_review_count: {min_review_count} max_price: {max_price}")
+    print(f"is_multi: {is_multi} and is_free:{is_free}")
+    # fuzz find app_id 
     candidates = rec.find_appid_by_name(name, top_k=3)
     if not candidates:
         return jsonify({"error": f"No game found for '{name}'"}), 404
-
-
+    
     seed = candidates[0]
+    print("seed game:", seed)
     center_name = seed
     appid = seed["appid"]
     
-    print("seed game:", seed)
-    df = rec.recommend_similar(
-        seed["appid"],
-        top_k=10,
-    )
+    if genres == None and min_year == None and max_year == None and  min_positive_ratio == None and min_review_count == None and max_price == None and is_free == False and is_multi == False:
+        print("not using params to rec 1")
+        df = rec.recommend_similar(
+            seed["appid"],
+            top_k=10,
+            # **filter_kwargs,
+        )
+    else:
+        try:
+            print("using params to rec")
+            df = rec.recommend_similar(
+                seed["appid"],
+                top_k=10,
+                min_year=min_year,
+                max_year=max_year,
+                genres=genres,
+                is_free=is_free,
+                min_positive_ratio=min_positive_ratio,
+                min_review_count=min_review_count,
+                max_price=max_price,
+                use_multi_modal_score=is_multi,
+            )
+            center = {
+                "appid": df.iloc[0]["appid"],
+                "name": df.iloc[0]["name"],
+            } if not df.empty else None
+        except AttributeError:
+            print("not using params to rec")
+            df = rec.recommend_similar(
+                seed["appid"],
+                top_k=10,
+                # **filter_kwargs,
+            )
+    
+    
+    #df = rec.recommend_similar(
+    #    seed["appid"],
+    #    top_k=10,
+    #)
     df_clean = df.where(pd.notnull(df), None)
     df_clean = df.replace({np.nan: None})
     recs = df_clean.to_dict(orient="records")

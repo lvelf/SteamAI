@@ -81,3 +81,16 @@ def parse_filters_from_request(req):
         min_review_count=_get_int("min_review_count"),
         max_price=_get_float("max_price"),
     )
+
+
+def to_int(x):
+    try:
+        return int(x)
+    except (TypeError, ValueError):
+        return None
+
+def to_float(x):
+    try:
+        return float(x)
+    except (TypeError, ValueError):
+        return None

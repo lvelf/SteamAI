@@ -3,6 +3,16 @@ const gBtn = document.getElementById("draw-btn");
 const gStatus = document.getElementById("status");
 const gContainer = document.getElementById("graph");
 
+const minYearInput = document.getElementById("min-year");
+const maxYearInput = document.getElementById("max-year");
+const genresInput = document.getElementById("genres");
+const isFreeInput = document.getElementById("is-free");
+const isMultiInput = document.getElementById("multi-area");
+const minPosRatioInput = document.getElementById("min-positive-ratio");
+const minReviewCountInput = document.getElementById("min-review-count");
+const maxPriceInput = document.getElementById("max-price");
+
+
 gBtn.addEventListener("click", async () => {
   const name = gInput.value.trim();
   if (!name) {
@@ -13,8 +23,29 @@ gBtn.addEventListener("click", async () => {
   gStatus.textContent = "Loading graph data...";
   gContainer.innerHTML = "";
 
+  const params = new URLSearchParams();
+  params.set("name", name);
+
+  const minYear = minYearInput?.value.trim();
+  const maxYear = maxYearInput?.value.trim();
+  const genres = genresInput?.value.trim();
+  const isFree = isFreeInput?.checked;
+  const isMulti = isMultiInput?.checked;
+  const minPosRatio = minPosRatioInput?.value.trim();
+  const minReviewCount = minReviewCountInput?.value.trim();
+  const maxPrice = maxPriceInput?.value.trim();
+
+  if (minYear) params.set("min_year", minYear);
+  if (maxYear) params.set("max_year", maxYear);
+  if (genres) params.set("genres", genres);          // "action, rpg"
+  if (isFree) params.set("is_free", "true");
+  if (isMulti) params.set("is_multi", "true");
+  if (minPosRatio) params.set("min_positive_ratio", minPosRatio);
+  if (minReviewCount) params.set("min_review_count", minReviewCount);
+  if (maxPrice) params.set("max_price", maxPrice);
+
   try {
-    const resp = await fetch(`/api/graph?name=${encodeURIComponent(name)}`);
+    const resp = await fetch(`/api/graph?${params.toString()}`);
     const data = await resp.json();
 
     if (!resp.ok) {
@@ -71,7 +102,7 @@ function drawForceGraph(nodes, links) {
     .selectAll("text")
     .data(nodes)
     .enter().append("text")
-    .text(d => d.label)
+    .text(d => (typeof d.label === "string" ? d.label : (d.label?.name ?? String(d.label))))
     .attr("dy", -12);
 
   simulation.on("tick", () => {
@@ -111,3 +142,16 @@ function drawForceGraph(nodes, links) {
       .on("end", dragended);
   }
 }
+
+gInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    gBtn.click();
+  }
+});
+
+
+
+
+
+

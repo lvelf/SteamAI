@@ -26,6 +26,51 @@
       <button id="search-btn">Recommend</button>
     </div>
 
+    <div class="filter-panel">
+
+    <div class="filter-row">
+      <label>Release year:</label>
+      <input id="min-year" type="number" placeholder="From" />
+      <span class="range-sep">–</span>
+      <input id="max-year" type="number" placeholder="To" />
+    </div>
+
+    <div class="filter-row">
+      <label>Genres (comma separated):</label>
+      <input id="genres" type="text" placeholder="e.g. action, rpg" />
+    </div>
+
+    <div class="filter-row">
+      <label>
+      <input id="is-free" type="checkbox" />
+      Free only
+      </label>
+    </div>
+
+    <div class="filter-row">
+      <label>
+      <input id="multi-area" type="checkbox" />
+        Multi-area Recommendation
+      </label>
+    </div>
+
+  <div class="filter-row two-cols">
+    <div>
+      <label>Min positive ratio (0–1):</label>
+      <input id="min-positive-ratio" type="number" step="0.05" min="0" max="1" placeholder="e.g. 0.8" />
+    </div>
+    <div>
+      <label>Min review count:</label>
+      <input id="min-review-count" type="number" min="0" placeholder="e.g. 100" />
+    </div>
+  </div>
+
+    <div class="filter-row">
+      <label>Max price (USD):</label>
+      <input id="max-price" type="number" min="0" step="0.5" placeholder="e.g. 20" />
+    </div>
+  </div>
+
     <div id="status"></div>
 
     <table id="result-table" class="hidden">

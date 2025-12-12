@@ -99,9 +99,12 @@ function drawHotLineChart(rows) {
     return;
   }
 
-  const width = 900;
+  const width = 850; 
   const height = 320;
-  const margin = { top: 20, right: 20, bottom: 45, left: 60 };
+  const margin = { top: 20, right: 80, bottom: 45, left: 60 };
+  const [yMinRaw, yMaxRaw] = d3.extent(data, d => d.popularity);
+  const span = (yMaxRaw - yMinRaw) || 0;
+  const pad = Math.max(span * 0.2, 0.01);
 
   const svg = d3.select(hotChart)
     .append("svg")
@@ -113,8 +116,9 @@ function drawHotLineChart(rows) {
     .range([margin.left, width - margin.right]);
 
   const y = d3.scaleLinear()
-    .domain([0, d3.max(data, d => d.popularity)]).nice()
-    .range([height - margin.bottom, margin.top]);
+  .domain([yMinRaw - pad, yMaxRaw + pad])
+  .nice()
+  .range([height - margin.bottom, margin.top]);
 
   // axes
   svg.append("g")

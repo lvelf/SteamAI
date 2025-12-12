@@ -378,3 +378,7 @@ body.home .container {
   border-color:#3b82f6;
   color:white;
 }
+
+#hot-chart {
+  width: 100%;
+}

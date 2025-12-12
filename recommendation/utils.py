@@ -4,6 +4,7 @@ from flask import Flask, render_template, request, jsonify
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
 import numpy as np
+import pandas as pd
 
 def encode_text(text_encoder, text: str) -> np.ndarray:
    
@@ -94,3 +95,19 @@ def to_float(x):
         return float(x)
     except (TypeError, ValueError):
         return None
+
+def extract_release_year(release_date):
+    """
+    Parse release_date and return release year
+    """
+    if release_date is None:
+        return None
+
+    try:
+        dt = pd.to_datetime(release_date, errors="coerce")
+        if pd.isna(dt):
+            return None
+        return int(dt.year)
+    except Exception:
+        return None
+

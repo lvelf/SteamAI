@@ -18,7 +18,7 @@ emb_parquet = os.path.join(PROCESSED, "apps_embeddings.parquet")
 rec = SteamRecommender(apps_parquet, emb_parquet)
 
 # Fuzz Search
-print(rec.find_appid_by_name("crown tric", top_k=5))
+#print(rec.find_appid_by_name("crown tric", top_k=5))
 
 # filter
 
@@ -39,9 +39,10 @@ df = rec.recommend_by_name(
     "Portal 2",
 )
 print(df.head(10))
+print(f'{df.iloc[0]["name"]} release at: {df.iloc[0].get("release_year")} release date: {df.iloc[0].get("release_date")} ')
 
 print("================= Rec ======================")
 # print(rec.find_appid_by_name("Dota", top_k=5))
-print(rec.recommend_by_name(
-    "Dota 2",
-))
+#print(rec.recommend_by_name(
+#    "Dota 2",
+#))

@@ -283,6 +283,7 @@ def api_graph():
     #    seed["appid"],
     #    top_k=10,
     #)
+
     df_clean = df.where(pd.notnull(df), None)
     df_clean = df.replace({np.nan: None})
     recs = df_clean.to_dict(orient="records")
@@ -423,6 +424,30 @@ def api_review_summary():
     }
     return jsonify(payload)
 
+@app.route("/api/year_hot")
+def api_year_hot():
+    year_str = request.args.get("year", "").strip()
+    try:
+        year = int(year_str)
+    except Exception:
+        return jsonify({"error": "Missing or invalid year"}), 400
+
+    df = rec.apps.copy()
+
+    if "release_year" not in df.columns:
+        return jsonify({"error": "release_year column not found"}), 500
+
+    df["review_count"] = df["review_count"].fillna(0)
+    df["positive_ratio"] = df["positive_ratio"].fillna(0)
+
+    # popularity score
+    df["popularity"] = 0.6 * np.log1p(df["review_count"]) + 0.4 * df["positive_ratio"]
+
+    df = df[df["release_year"] == year]
+    df = df.sort_values("popularity", ascending=False).head(10)
+
+    rows = df[["appid", "name", "popularity", "review_count", "positive_ratio"]].to_dict(orient="records")
+    return jsonify({"year": year, "rows": rows})
 
 if __name__ == "__main__":
     app.run(debug=True)

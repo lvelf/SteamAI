@@ -1,3 +1,4 @@
+// ======================= Graph: inputs & filters =======================
 const gInput = document.getElementById("game-input");
 const gBtn = document.getElementById("draw-btn");
 const gStatus = document.getElementById("status");
@@ -12,32 +13,242 @@ const minPosRatioInput = document.getElementById("min-positive-ratio");
 const minReviewCountInput = document.getElementById("min-review-count");
 const maxPriceInput = document.getElementById("max-price");
 
+// ======================= Tabs: Graph <-> Hot =======================
+const tabGraph = document.getElementById("tab-graph");
+const tabHot = document.getElementById("tab-hot");
+const graphPanel = document.getElementById("graph-panel");
+const hotPanel = document.getElementById("hot-panel");
 
-gBtn.addEventListener("click", async () => {
-  const name = gInput.value.trim();
-  if (!name) {
-    gStatus.textContent = "Please enter a game name.";
+function showGraph() {
+  tabGraph?.classList.add("active");
+  tabHot?.classList.remove("active");
+  graphPanel?.classList.remove("hidden");
+  hotPanel?.classList.add("hidden");
+}
+
+function showHot() {
+  tabHot?.classList.add("active");
+  tabGraph?.classList.remove("active");
+  hotPanel?.classList.remove("hidden");
+  graphPanel?.classList.add("hidden");
+}
+
+tabGraph?.addEventListener("click", showGraph);
+tabHot?.addEventListener("click", showHot);
+
+// ======================= Hot UI (front-end first: mock) =======================
+const hotYearInput = document.getElementById("hot-year");
+const hotBtn = document.getElementById("hot-btn");
+const hotStatus = document.getElementById("hot-status");
+const hotTable = document.getElementById("hot-table");
+const hotTbody = hotTable?.querySelector("tbody");
+
+(function initHotDefaultYear() {
+  if (!hotYearInput) return;
+  // default to last year
+  hotYearInput.value = String(new Date().getFullYear() - 1);
+})();
+
+function renderHotTable(rows) {
+  if (!hotTbody || !hotTable) return;
+  hotTbody.innerHTML = "";
+
+  rows.forEach((r, idx) => {
+    const pop =
+      typeof r.popularity === "number"
+        ? r.popularity.toFixed(3)
+        : (r.popularity ?? "");
+
+    const pr =
+      typeof r.positive_ratio === "number"
+        ? r.positive_ratio.toFixed(3)
+        : (r.positive_ratio ?? "");
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td>${r.appid ?? ""}</td>
+      <td>${r.name ?? ""}</td>
+      <td>${pop}</td>
+      <td>${r.review_count ?? ""}</td>
+      <td>${pr}</td>
+    `;
+    hotTbody.appendChild(tr);
+  });
+
+  hotTable.classList.remove("hidden");
+}
+
+const hotChart = document.getElementById("hot-chart");
+
+function drawHotLineChart(rows) {
+  if (!hotChart) return;
+
+  hotChart.innerHTML = "";
+  hotChart.classList.remove("hidden");
+
+  // top10
+  const data = (rows || []).slice(0, 10).map((r, i) => ({
+    rank: i + 1,
+    popularity: Number(r.popularity ?? 0),
+    name: r.name ?? "",
+  }));
+
+  if (!data.length) {
+    hotChart.textContent = "No chart data.";
     return;
   }
 
-  gStatus.textContent = "Loading graph data...";
-  gContainer.innerHTML = "";
+  const width = 900;
+  const height = 320;
+  const margin = { top: 20, right: 20, bottom: 45, left: 60 };
+
+  const svg = d3.select(hotChart)
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+  const x = d3.scaleLinear()
+    .domain([1, d3.max(data, d => d.rank)])
+    .range([margin.left, width - margin.right]);
+
+  const y = d3.scaleLinear()
+    .domain([0, d3.max(data, d => d.popularity)]).nice()
+    .range([height - margin.bottom, margin.top]);
+
+  // axes
+  svg.append("g")
+    .attr("transform", `translate(0,${height - margin.bottom})`)
+    .call(d3.axisBottom(x).ticks(data.length).tickFormat(d3.format("d")));
+
+  svg.append("g")
+    .attr("transform", `translate(${margin.left},0)`)
+    .call(d3.axisLeft(y));
+
+  // axis labels
+  svg.append("text")
+    .attr("x", (width) / 2)
+    .attr("y", height - 10)
+    .attr("text-anchor", "middle")
+    .attr("fill", "#9ca3af")
+    .text("Rank");
+
+  svg.append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("x", -height / 2)
+    .attr("y", 16)
+    .attr("text-anchor", "middle")
+    .attr("fill", "#9ca3af")
+    .text("Popularity");
+
+  // line
+  const line = d3.line()
+    .x(d => x(d.rank))
+    .y(d => y(d.popularity));
+
+  svg.append("path")
+    .datum(data)
+    .attr("fill", "none")
+    .attr("stroke", "#22c55e")
+    .attr("stroke-width", 2.5)
+    .attr("d", line);
+
+  // points
+  const pts = svg.append("g")
+    .selectAll("circle")
+    .data(data)
+    .enter()
+    .append("circle")
+    .attr("cx", d => x(d.rank))
+    .attr("cy", d => y(d.popularity))
+    .attr("r", 4)
+    .attr("fill", "#22c55e");
+
+  // rank labels near points
+  svg.append("g")
+    .selectAll("text.rank-label")
+    .data(data)
+    .enter()
+    .append("text")
+    .attr("class", "rank-label")
+    .attr("x", d => x(d.rank) + 6)
+    .attr("y", d => y(d.popularity) - 6)
+    .attr("font-size", 10)
+    .attr("fill", "#e5e7eb")
+    .text(d => `#${d.rank}`);
+
+  // tooltip (native)
+  pts.append("title")
+    .text(d => `#${d.rank} ${d.name}\npopularity=${d.popularity.toFixed(3)}`);
+}
+
+
+
+async function fetchHotTop10(year) {
+  const resp = await fetch(`/api/year_hot?year=${encodeURIComponent(year)}`);
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error || "Error fetching hot");
+  return data.rows || [];
+}
+
+hotBtn?.addEventListener("click", async () => {
+  const year = hotYearInput?.value?.trim();
+  if (!year) {
+    if (hotStatus) hotStatus.textContent = "Please enter a year.";
+    return;
+  }
+
+  if (hotStatus) hotStatus.textContent = `Loading Top 10 for ${year}...`;
+  hotTable?.classList.add("hidden");
+
+  hotChart?.classList.add("hidden");
+  if (hotChart) hotChart.innerHTML = "";
+
+  try {
+    const rows = await fetchHotTop10(year);
+    if (hotStatus) hotStatus.textContent = `Top 10 games in ${year}`;
+    renderHotTable(rows);
+    drawHotLineChart(rows);
+  } catch (e) {
+    console.error(e);
+    if (hotStatus) hotStatus.textContent = "Failed to load hot.";
+    hotChart?.classList.add("hidden");
+  }
+});
+
+hotYearInput?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    hotBtn?.click();
+  }
+});
+
+// ======================= Graph fetch + render =======================
+gBtn?.addEventListener("click", async () => {
+  const name = gInput?.value?.trim();
+  if (!name) {
+    if (gStatus) gStatus.textContent = "Please enter a game name.";
+    return;
+  }
+
+  if (gStatus) gStatus.textContent = "Loading graph data...";
+  if (gContainer) gContainer.innerHTML = "";
 
   const params = new URLSearchParams();
   params.set("name", name);
 
-  const minYear = minYearInput?.value.trim();
-  const maxYear = maxYearInput?.value.trim();
-  const genres = genresInput?.value.trim();
+  const minYear = minYearInput?.value?.trim();
+  const maxYear = maxYearInput?.value?.trim();
+  const genres = genresInput?.value?.trim();
   const isFree = isFreeInput?.checked;
   const isMulti = isMultiInput?.checked;
-  const minPosRatio = minPosRatioInput?.value.trim();
-  const minReviewCount = minReviewCountInput?.value.trim();
-  const maxPrice = maxPriceInput?.value.trim();
+  const minPosRatio = minPosRatioInput?.value?.trim();
+  const minReviewCount = minReviewCountInput?.value?.trim();
+  const maxPrice = maxPriceInput?.value?.trim();
 
   if (minYear) params.set("min_year", minYear);
   if (maxYear) params.set("max_year", maxYear);
-  if (genres) params.set("genres", genres);          // "action, rpg"
+  if (genres) params.set("genres", genres); // "action, rpg"
   if (isFree) params.set("is_free", "true");
   if (isMulti) params.set("is_multi", "true");
   if (minPosRatio) params.set("min_positive_ratio", minPosRatio);
@@ -49,16 +260,15 @@ gBtn.addEventListener("click", async () => {
     const data = await resp.json();
 
     if (!resp.ok) {
-      gStatus.textContent = data.error || "Error fetching graph data.";
+      if (gStatus) gStatus.textContent = data.error || "Error fetching graph data.";
       return;
     }
 
-    gStatus.textContent = `Center game: ${data.center?.name || name}`;
-
+    if (gStatus) gStatus.textContent = `Center game: ${data.center?.name || name}`;
     drawForceGraph(data.nodes, data.links);
   } catch (err) {
     console.error(err);
-    gStatus.textContent = "Network or server error.";
+    if (gStatus) gStatus.textContent = "Network or server error.";
   }
 });
 
@@ -71,7 +281,7 @@ function drawForceGraph(nodes, links) {
     .attr("width", width)
     .attr("height", height);
 
-  const color = d => d.group === 0 ? "#f97316" : "#3b82f6";
+  const color = (d) => (d.group === 0 ? "#f97316" : "#3b82f6");
 
   const simulation = d3.forceSimulation(nodes)
     .force("link", d3.forceLink(links).id(d => d.id).distance(d => 200 * (1 - d.value)))
@@ -92,7 +302,7 @@ function drawForceGraph(nodes, links) {
     .selectAll("circle")
     .data(nodes)
     .enter().append("circle")
-    .attr("r", d => d.group === 0 ? 10 : 6)
+    .attr("r", d => (d.group === 0 ? 10 : 6))
     .attr("fill", color)
     .call(drag(simulation));
 
@@ -143,15 +353,9 @@ function drawForceGraph(nodes, links) {
   }
 }
 
-gInput.addEventListener("keydown", (e) => {
+gInput?.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
-    gBtn.click();
+    gBtn?.click();
   }
 });
-
-
-
-
-
-

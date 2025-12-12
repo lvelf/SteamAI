@@ -4,7 +4,7 @@ from sklearn.preprocessing import normalize
 from sklearn.metrics.pairwise import cosine_similarity
 from difflib import SequenceMatcher
 from typing import List, Optional, Dict, Any
-
+from utils import extract_release_year
 
 class SteamRecommender:
     """
@@ -54,7 +54,9 @@ class SteamRecommender:
         # delete DLC / demo
         if "type" in merged.columns:
             merged = merged[merged["type"] == "game"].copy()
-        
+        # add release year
+        merged["release_year"] = merged["release_date"].apply(extract_release_year)  
+
         # genres -> List[str]
         if "genres" in merged.columns:
             def _normalize_genres(x):
@@ -82,7 +84,9 @@ class SteamRecommender:
             merged["genres"] = merged["genres"].apply(_normalize_genres)
         else:
             merged["genres"] = [[] for _ in range(len(merged))]
-            
+
+        
+
         self.apps = merged.reset_index(drop=True)
         
         print("Stacking embedding matrix...")
@@ -113,11 +117,11 @@ class SteamRecommender:
 
         out = df
 
-        if min_year is not None and "release_date" in out.columns:
-            out = out[out["release_date"].fillna(0) >= min_year]
+        if min_year is not None and "release_year" in out.columns:
+            out = out[out["release_year"].fillna(0) >= min_year]
 
-        if max_year is not None and "release_date" in out.columns:
-            out = out[out["release_date"].fillna(9999) <= max_year]
+        if max_year is not None and "release_year" in out.columns:
+            out = out[out["release_year"].fillna(9999) <= max_year]
 
         if genres:
             gset = {g.lower() for g in genres}
@@ -286,7 +290,7 @@ class SteamRecommender:
             "short_description",
             "similarity",
         ]
-        for c in ["positive_ratio", "review_count", "release_date", "genres", "score"]:
+        for c in ["positive_ratio", "review_count", "release_year", "release_date", "genres", "score"]:
             if c in df.columns:
                 cols.append(c)
 

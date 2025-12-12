@@ -19,6 +19,7 @@ def create_spark(app_name="SteamAI-Spark"):
     
     return spark
 
+
 # Clean application table
 def build_apps_table(spark, csv_base_dir, out_path):
     """
@@ -93,6 +94,7 @@ def build_apps_table(spark, csv_base_dir, out_path):
     )
     
     # realease date
+    
     apps = apps.withColumn(
         "release_year_str",
         regexp_extract(col("release_date"), r"(\\d{4})", 1)
@@ -104,6 +106,7 @@ def build_apps_table(spark, csv_base_dir, out_path):
     )
 
     apps = apps.drop("release_year_str")
+    
     
     apps = apps.withColumn(
         "name_normalized",

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>SteamAI - Force Graph</title>
+  <title>SteamAI - Graph & Hot</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -14,71 +14,108 @@
       <a href="/graph">Graph</a>
       <a href="/prompt">Prompt</a>
       <a href="/summary">Summary</a>
-  </div>
+    </div>
   </header>
+
   <div class="container">
-    <h1>Force-Directed Graph</h1>
+    <h1>Graph & Trends</h1>
     <a href="{{ url_for('index') }}" class="link-back">← Back to Home</a>
 
-    <div class="search-box">
-      <label for="game-input">Game name:</label>
-      <input id="game-input" type="text" placeholder="e.g. Dota 2">
-      <button id="draw-btn">Draw Graph</button>
+    <!-- Toggle -->
+    <div class="view-toggle">
+      <button id="tab-graph" class="tab-btn active">Force Graph</button>
+      <button id="tab-hot" class="tab-btn">Yearly Hot Panel</button>
     </div>
 
-    
-  <div class="filter-panel">
+    <!-- ================= Graph Panel ================= -->
+    <section id="graph-panel">
+      <h2>Force-Directed Graph</h2>
 
-  <div class="filter-row">
-    <label>Release year:</label>
-    <input id="min-year" type="number" placeholder="From" />
-    <span class="range-sep">–</span>
-    <input id="max-year" type="number" placeholder="To" />
+      <div class="search-box">
+        <label for="game-input">Game name:</label>
+        <input id="game-input" type="text" placeholder="e.g. Dota 2">
+        <button id="draw-btn">Draw Graph</button>
+      </div>
+
+      <div class="filter-panel">
+        <div class="filter-row">
+          <label>Release year:</label>
+          <input id="min-year" type="number" placeholder="From" />
+          <span class="range-sep">-</span>
+          <input id="max-year" type="number" placeholder="To" />
+        </div>
+
+        <div class="filter-row">
+          <label>Genres (comma separated):</label>
+          <input id="genres" type="text" placeholder="e.g. action, rpg" />
+        </div>
+
+        <div class="filter-row">
+          <label>
+            <input id="is-free" type="checkbox" />
+            Free only
+          </label>
+        </div>
+
+        <div class="filter-row">
+          <label>
+            <input id="multi-area" type="checkbox" />
+            Multi-area Recommendation
+          </label>
+        </div>
+
+        <div class="filter-row two-cols">
+          <div>
+            <label>Min positive ratio (0–1):</label>
+            <input id="min-positive-ratio" type="number" step="0.05" min="0" max="1" placeholder="e.g. 0.8" />
+          </div>
+          <div>
+            <label>Min review count:</label>
+            <input id="min-review-count" type="number" min="0" placeholder="e.g. 100" />
+          </div>
+        </div>
+
+        <div class="filter-row">
+          <label>Max price (USD):</label>
+          <input id="max-price" type="number" min="0" step="0.5" placeholder="e.g. 20" />
+        </div>
+      </div>
+
+      <div id="status"></div>
+      <div id="graph"></div>
+    </section>
+
+    <!-- ================= Hot Panel ================= -->
+    <section id="hot-panel" class="hidden">
+      <h2>Yearly Hot (Top 10)</h2>
+
+      <div class="search-box">
+        <label for="hot-year">Year:</label>
+        <input id="hot-year" type="number" placeholder="e.g. 2024" />
+        <button id="hot-btn">Search</button>
+        <span id="hot-status" style="margin-left:12px;color:#9ca3af;"></span>
+      </div>
+
+      <table id="hot-table" class="hidden">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>appid</th>
+            <th>name</th>
+            <th>popularity</th>
+            <th>review_count</th>
+            <th>positive_ratio</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div id="hot-chart" class="hidden"></div>
+
+    </section>
   </div>
 
-  <div class="filter-row">
-    <label>Genres (comma separated):</label>
-    <input id="genres" type="text" placeholder="e.g. action, rpg" />
-  </div>
-
-
-  <div class="filter-row">
-    <label>
-      <input id="is-free" type="checkbox" />
-      Free only
-    </label>
-  </div>
-
-    <div class="filter-row">
-      <label>
-      <input id="multi-area" type="checkbox" />
-        Multi-area Recommendation
-      </label>
-    </div>
-
-  <div class="filter-row two-cols">
-    <div>
-      <label>Min positive ratio (0–1):</label>
-      <input id="min-positive-ratio" type="number" step="0.05" min="0" max="1" placeholder="e.g. 0.8" />
-    </div>
-    <div>
-      <label>Min review count:</label>
-      <input id="min-review-count" type="number" min="0" placeholder="e.g. 100" />
-    </div>
-  </div>
-
-    <div class="filter-row">
-      <label>Max price (USD):</label>
-      <input id="max-price" type="number" min="0" step="0.5" placeholder="e.g. 20" />
-    </div>
-
-  </div>
-
-    <div id="status"></div>
-    <div id="graph"></div>
-  </div>
-
-  <!-- 引入 D3 -->
+  <!-- D3 -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="{{ url_for('static', filename='graph.js') }}"></script>
 </body>

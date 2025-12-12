@@ -357,3 +357,24 @@ body.home .container {
 .range-sep {
   color: #6b7280;
 }
+
+.view-toggle{
+  display:flex;
+  gap:12px;
+  margin: 12px 0 18px;
+}
+
+.tab-btn{
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #334155;
+  background:#0b1220;
+  color:#e5e7eb;
+  cursor:pointer;
+}
+
+.tab-btn.active{
+  background:#3b82f6;
+  border-color:#3b82f6;
+  color:white;
+}

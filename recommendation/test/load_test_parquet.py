@@ -14,8 +14,8 @@ PROCESSED = os.path.join(DATA_BASE, "processed")
 
 apps_parquet = os.path.join(PROCESSED, "apps_with_stats.parquet")
 emb_parquet = os.path.join(PROCESSED, "apps_embeddings.parquet")
-
-rec = SteamRecommender(apps_parquet, emb_parquet)
+ALIASES_PATH = os.path.join(PROCESSED, "app_aliases.parquet")
+rec = SteamRecommender(apps_parquet, emb_parquet, ALIASES_PATH)
 
 # Fuzz Search
 #print(rec.find_appid_by_name("crown tric", top_k=5))

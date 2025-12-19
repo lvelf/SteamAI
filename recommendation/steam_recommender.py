@@ -5,6 +5,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 from difflib import SequenceMatcher
 from typing import List, Optional, Dict, Any
 from utils import extract_release_year
+from difflib import SequenceMatcher
+from typing import Any, Dict, List
+import pandas as pd
 
 class SteamRecommender:
     """
@@ -31,6 +34,7 @@ class SteamRecommender:
         self,
         apps_parquet_path: str,
         emb_parquet_path: str,
+        alias_parquet_path: Optional[str] = None,
     ):
         
         print("Loading apps parquet...")
@@ -43,8 +47,56 @@ class SteamRecommender:
         print("embeddings columns:", emb_df.columns)
         print("embeddings shape:", emb_df.shape)
 
+        if alias_parquet_path:
+            try:
+                print("Loading aliases parquet...")
+                alias_df = pd.read_parquet(alias_parquet_path)
+                print("aliases columns:", alias_df.columns)
+                print("aliases shape:", alias_df.shape)
+
+                # normalize appid to string for join
+                alias_df["appid"] = alias_df["appid"].astype(str)
+
+                # keep only needed columns
+                keep_cols = ["appid"]
+                for c in ["aliases", "alias_text"]:
+                    if c in alias_df.columns:
+                        keep_cols.append(c)
+                alias_df = alias_df[keep_cols].drop_duplicates("appid")
+
+                # left join into apps (do NOT drop any game)
+                apps["appid"] = apps["appid"].astype(str)
+                apps = apps.merge(alias_df, on="appid", how="left")
+
+                # ensure columns exist
+                if "aliases" not in apps.columns:
+                    apps["aliases"] = [[] for _ in range(len(apps))]
+                if "alias_text" not in apps.columns:
+                    apps["alias_text"] = ""
+
+                # normalize alias_text for search
+                def _norm_text(s):
+                    if s is None:
+                        return ""
+                    try:
+                        if pd.isna(s):
+                            return ""
+                    except Exception:
+                        pass
+                    return str(s).strip().lower()
+
+                apps["alias_text_normalized"] = apps["alias_text"].apply(_norm_text)
+
+                print("apps after alias merge:", apps.shape)
+
+            except Exception as e:
+                print("[WARN] failed to load/merge alias parquet:", e)
+                # keep pipeline working even if alias fails
+                apps["aliases"] = [[] for _ in range(len(apps))]
+                apps["alias_text"] = ""
+                apps["alias_text_normalized"] = ""
         
-         #  appid -> string
+        #  appid -> string
         apps["appid"] = apps["appid"].astype(str)
         emb_df["appid"] = emb_df["appid"].astype(str)
         
@@ -161,6 +213,9 @@ class SteamRecommender:
 
         return out
     
+
+
+
     def find_appid_by_name(self, name: str, top_k: int = 5) -> List[Dict[str, Any]]:
         """
         Fuzz Search
@@ -172,47 +227,89 @@ class SteamRecommender:
 
         apps = self.apps
 
+        def rank_results(df: pd.DataFrame, q_norm: str) -> pd.DataFrame:
+            """
+            Rank candidate 
+            """
+            df = df.copy()
+
+            # exact match
+            if "name_normalized" in df.columns:
+                df["_exact"] = df["name_normalized"].fillna("").str.lower().eq(q_norm).astype(int)
+            else:
+                df["_exact"] = df["name"].fillna("").str.lower().eq(q_norm).astype(int)
+
+            # prefer main games if type exists
+            if "type" in df.columns:
+                t = df["type"].fillna("").astype(str).str.lower()
+                df["_type_bonus"] = (t.eq("game").astype(int) * 2) - (
+                    t.isin(["dlc", "video", "demo", "music", "application"]).astype(int) * 2
+                )
+            else:
+                df["_type_bonus"] = 0
+
+            # prefer higher review_count if exists
+            if "review_count" in df.columns:
+                df["_reviews"] = pd.to_numeric(df["review_count"], errors="coerce").fillna(0)
+            else:
+                df["_reviews"] = 0
+
+            # prefer shorter title
+            df["_name_len"] = df["name"].astype(str).str.len()
+
+            df = df.sort_values(
+                by=["_exact", "_type_bonus", "_reviews", "_name_len"],
+                ascending=[False, False, False, True],
+            )
+            return df
+
+    
         masks = []
 
         if "name_normalized" in apps.columns:
             masks.append(
-                apps["name_normalized"]
-                .fillna("")
-                .str.lower()
-                .str.contains(q, na=False)
+                apps["name_normalized"].fillna("").str.lower().str.contains(q, na=False)
             )
 
         masks.append(
-            apps["name"]
-            .fillna("")
-            .str.lower()
-            .str.contains(q, na=False)
+            apps["name"].fillna("").str.lower().str.contains(q, na=False)
         )
+
+        # aliases
+        if "alias_text_normalized" in apps.columns:
+            masks.append(apps["alias_text_normalized"].fillna("").str.contains(q, na=False))
+        elif "alias_text" in apps.columns:
+            masks.append(apps["alias_text"].fillna("").str.lower().str.contains(q, na=False))
 
         mask = masks[0]
         for m in masks[1:]:
             mask = mask | m
 
-        results = apps.loc[mask, ["appid", "name"]].drop_duplicates()
+        
+        results = apps.loc[mask, :].drop_duplicates(subset=["appid"])
 
         if not results.empty:
-            return results.head(top_k).to_dict(orient="records")
+            results = rank_results(results, q)
+            return results[["appid", "name"]].head(top_k).to_dict(orient="records")
 
-        # contains miss → fallback fuzz search
+        # ---------- fuzz stage ----------
         series = (
-            apps["name_normalized"]
-            if "name_normalized" in apps.columns
-            else apps["name"]
+            apps["name_normalized"] if "name_normalized" in apps.columns else apps["name"]
         ).fillna("")
 
         def sim(a, b):
             return SequenceMatcher(None, a, b).ratio()
 
         scores = series.str.lower().apply(lambda x: sim(q, x))
-        top_idx = scores.sort_values(ascending=False).head(top_k).index
+        top_idx = scores.sort_values(ascending=False).head(max(top_k * 10, 50)).index
 
-        fuzzy_results = apps.loc[top_idx, ["appid", "name"]].drop_duplicates()
-        return fuzzy_results.to_dict(orient="records")
+        fuzzy_candidates = apps.loc[top_idx, :].drop_duplicates(subset=["appid"])
+        if fuzzy_candidates.empty:
+            return []
+
+        fuzzy_candidates = rank_results(fuzzy_candidates, q)
+        return fuzzy_candidates[["appid", "name"]].head(top_k).to_dict(orient="records")
+
     
     def recommend_similar(
         self,

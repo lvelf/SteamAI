@@ -227,7 +227,6 @@ Extra context: {extra}
             prompt_text,
             max_new_tokens=cfg.max_new_tokens,
             do_sample=False,
-            temperature=cfg.temperature,
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.eos_token_id,
         )

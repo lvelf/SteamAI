@@ -23,6 +23,7 @@ TEMPLATE_DIR = os.path.join(PROJECT_ROOT, "Website", "templates")
 STATIC_DIR   = os.path.join(PROJECT_ROOT, "Website", "static")
 PROCESSED = os.path.join(DATA_BASE, "processed")
 SUMMARIES_PATH = os.path.join(PROCESSED, "review_summaries.parquet")
+ALIASES_PATH = os.path.join(PROCESSED, "app_aliases.parquet")
 print("TEMPLATE_DIR =", TEMPLATE_DIR)
 print("STATIC_DIR   =", STATIC_DIR)
 
@@ -54,7 +55,7 @@ rec = SteamRecommender(
     ),
 )
 """
-rec = SteamRecommender(apps_parquet, emb_parquet)
+rec = SteamRecommender(apps_parquet, emb_parquet, ALIASES_PATH)
 
 print("Loading review summaries ...")
 try:
@@ -176,7 +177,7 @@ def api_recommend():
             df = rec.recommend_similar(
                 seed["appid"],
                 top_k=10,
-                # **filter_kwargs,
+                #**filter_kwargs,
             )
 
     

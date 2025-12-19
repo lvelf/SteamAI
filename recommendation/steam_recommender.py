@@ -209,7 +209,9 @@ class SteamRecommender:
             out = out[out["review_count"].fillna(0) >= min_review_count]
 
         if max_price is not None and "mat_final_price" in out.columns:
-            out = out[out["mat_final_price"].fillna(float("inf")) <= max_price]
+            price = pd.to_numeric(out["mat_final_price"], errors="coerce")      
+            price = price.fillna(float("inf"))
+            out = out[price <= float(max_price)]
 
         return out
     

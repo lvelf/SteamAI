@@ -6,6 +6,7 @@ from sentence_transformers import SentenceTransformer
 from utils import encode_text, df_to_json_records, parse_filters_from_request, to_float, to_int
 import pandas as pd
 import numpy as np
+from prompt_transformer import transform_sync
 
 THIS_DIR = os.path.dirname(__file__)                 # .../Final/SteamAI/Website
 PROJECT_ROOT = os.path.dirname(THIS_DIR)             # .../Final/SteamAI
@@ -374,9 +375,14 @@ def api_prompt_recommend():
     
     if df is None:
         mode = "semantic"
-        vec = encode_text(text_encoder, text)         # (1, 1024)
+
+        # transform prompt 
+        transformed = transform_sync(text)
+
+        # embed transformed text BGE-M3
+        vec = encode_text(text_encoder, transformed)  # (1, 1024)
         df = rec.search_by_vector(vec, top_k=10)
-    
+
     records = df_to_json_records(df)
     
     return_json = jsonify({
